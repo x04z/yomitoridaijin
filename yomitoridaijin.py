@@ -117,7 +117,7 @@ st.markdown("---")
 st.markdown("### 読取革命のスキャンのコツとやり方")
 st.markdown("- エクセレントモードでスキャンする。")
 st.markdown("- 英語モードに設定する（どっちか忘れましたけど、アメリカかイギリスの国旗のマークだったと思います。)")
-st.markdown("- PDFのページ全体を四角で囲って抽出範囲の選択をする。（ただし、余計な上の部分や下のページ番号、BGPなどの暗号部分は選択しない。）")
+st.markdown("- PDFのページ全体を四角で囲って抽出範囲の選択をする。（ただし、余計な上の部分や下のページ番号、PGP SIGNATUREなどの暗号部分は選択しない。）")
 st.markdown("- 一太郎のアイコンからtxt形式で保存する。")
 st.markdown("- 保存したtxtファイルをこのアプリにアップロードする。")
 st.markdown("---")
@@ -172,3 +172,4 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"ファイルの処理中に予期せぬエラーが発生しました: {e}")
+
