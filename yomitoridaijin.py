@@ -113,6 +113,7 @@ st.markdown("createdAtのキー名誤認識（cneatedAt）にも対応してい�
 st.markdown("IPアドレスの抽出は、3つの「.」で区切られた4つの数値の組み合わせを抽出します。IPv6には対応していません。")
 st.markdown("createdAtの文字やIPアドレスの数字がほかの文字に誤認識された場合は、その文字も反映できるようにしますので教えてください！")
 st.markdown("アップロードされたテキストファイルは、このアプリ内で処理・完結します。なので、情報漏えいの心配はありません。心配の方はGitHubからPythonコードを見て判断してください!")
+st.markdown("ダウンロードしたcsvファイルのJST列ですが、デフォルトの定義だと秒まで入っていないので、セルの書式設定から手動で「yyyy/m/d h:mm:ss」を定義してください。あとで直します。")
 st.markdown("---")
 st.markdown("### 読取革命のスキャンのコツとやり方")
 st.markdown("- エクセレントモードでスキャンする。")
@@ -172,5 +173,6 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"ファイルの処理中に予期せぬエラーが発生しました: {e}")
+
 
 
