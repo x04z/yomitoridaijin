@@ -3,7 +3,7 @@ import re
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 
-# --- 1. 定数とユーティリティ関数（最終調整 - 修正版 V7） ---
+# --- 1. 定数とユーティリティ関数 ---
 
 # 日本標準時 (JST) のタイムゾーンオブジェクト (UTC+9)
 JST = timezone(timedelta(hours=9), 'JST')
@@ -42,7 +42,6 @@ def clean_time_string_for_display(time_str):
     parsed_str = clean_time_string_for_parsing(time_str)
     
     if parsed_str:
-        # 💡 修正点: '.000Z' を付与
         return f"{parsed_str}.000Z"
     return "**[抽出失敗]**"
 
@@ -109,9 +108,10 @@ def extract_ip_audit_data_final(raw_text):
 # --- 2. Streamlit UI定義 ---
 
 st.title("🫅 読取大臣（仮）")
-st.markdown("動作確認用のテスト版を作成しました。エラーがでたらその都度教えてください。")
-st.markdown("createdAtのキー名誤認識（cneatedAt）にも対応しています。逆に、それ以外の誤認識があった場合に対応していません。")
+st.markdown("動作確認用のテスト版を作成しました。")
+st.markdown("createdAtのキー名誤認識（cneatedAt）にも対応しています。")
 st.markdown("IPアドレスの抽出は、3つの「.」で区切られた4つの数値の組み合わせを抽出します。IPv6には対応していません。")
+st.markdown("createdAtの文字やIPアドレスの数字がほかの文字に誤認識された場合は、その文字も反映できるようにしますので教えてください！")
 st.markdown("アップロードされたテキストファイルは、このアプリ内で処理・完結します。なので、情報漏えいの心配はありません。心配の方はGitHubからPythonコードを見て判断してください!")
 st.markdown("---")
 st.markdown("### 読取革命のスキャンのコツとやり方")
@@ -161,9 +161,9 @@ if uploaded_file is not None:
             
             csv = convert_df_to_csv(df_result)
             st.download_button(
-                label="📥 結果をCSVとしてダウンロード (Shift-JIS/CP932)",
+                label="📥 結果をCSVとしてダウンロード",
                 data=csv,
-                file_name='ip_audit_summary_ultimate_clean_fixed_v7_sjis.csv',
+                file_name='yomidai.csv',
                 mime='text/csv',
             )
             
@@ -171,5 +171,4 @@ if uploaded_file is not None:
             st.error("ファイルから有効なデータパターンを抽出できませんでした。")
 
     except Exception as e:
-
         st.error(f"ファイルの処理中に予期せぬエラーが発生しました: {e}")
