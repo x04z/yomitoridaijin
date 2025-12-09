@@ -72,14 +72,15 @@ def extract_ip_audit_data_final(raw_text):
     """
     OCRテキストからcreatedAtとloginIpのデータを抽出し、ペアにしてDataFrameを返す
     """
-    ip_address_pattern = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
+    # 修正点: [.\。] を使用して、ピリオド(.)と全角句点(。)の両方に対応
+    ip_address_pattern = re.compile(r'(\d{1,3}[.\。]\d{1,3}[.\。]\d{1,3}[.\。]\d{1,3})')
     all_login_ip = ip_address_pattern.findall(raw_text)
 
     createdAt_pattern = re.compile(r'"(created|cneated)At"\s*:\s*"([^"]+)"')
     all_created_at = [match[1] for match in createdAt_pattern.findall(raw_text)]
     
     st.info(f"抽出されたUTC時刻レコード数: **{len(all_created_at)}**")
-    st.info(f"抽出されたIPアドレスレコード数: **{len(all_login_ip)}**")
+    st.info(f"抽出されたIPアドレスレコード数: **{len(all_login_ip)}** (ピリオド '.' と全角句点 '。' に対応済み)")
 
     results = []
     max_len = max(len(all_created_at), len(all_login_ip))
@@ -110,7 +111,7 @@ def extract_ip_audit_data_final(raw_text):
 st.title("🫅 読取大臣（仮）")
 st.markdown("動作確認用のテスト版を作成しました。")
 st.markdown("createdAtのキー名誤認識（cneatedAt）にも対応しています。")
-st.markdown("IPアドレスの抽出は、3つの「.」で区切られた4つの数値の組み合わせを抽出します。IPv6には対応していません。")
+st.markdown("IPアドレスの抽出は、3つの「.」で区切られた4つの数値の組み合わせを抽出します。**ピリオド（.）と全角句点（。）のどちらにも対応するように修正しました。** IPv6には対応していません。")
 st.markdown("createdAtの文字やIPアドレスの数字がほかの文字に誤認識された場合は、その文字も反映できるようにしますので教えてください！")
 st.markdown("アップロードされたテキストファイルは、このアプリ内で処理・完結します。なので、情報漏えいの心配はありません。心配の方はGitHubからPythonコードを見て判断してください!")
 st.markdown("---")
