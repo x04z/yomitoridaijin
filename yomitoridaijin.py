@@ -19,9 +19,11 @@ def clean_time_string_for_parsing(time_str):
     cleaned = time_str.replace('l', '1').replace('I', '1')
     
     # 2. 余分なノイズ文字を削除
+    # この関数は新しい抽出ロジックでは主に時刻のクリーンアップに利用される
     cleaned = cleaned.replace("'", "").replace("b", "").replace(">", "").replace("`", "")
 
     # 3. 日付と時刻を厳密な正規表現で抽出
+    # YYYY-MM-DD と HH:MM:SS のパターンに一致する部分を検索
     date_pattern = re.search(r'(\d{4}[-]\d{2}[-]\d{2})', cleaned)
     time_pattern = re.search(r'(\d{2}[:]\d{2}[:]\d{2})', cleaned)
     
@@ -39,6 +41,8 @@ def clean_time_string_for_display(time_str):
     ユーザーが視認するためのクリーン済みUTC文字列 (YYYY-MM-DDTHH:MM:SS.000Z) を生成する
     【表示用】: .000Z を付与
     """
+    # 新しいロジックでは、抽出された時刻文字列が既にクリーンに近い形式であるため
+    # clean_time_string_for_parsing を通して、念のため形式を統一
     parsed_str = clean_time_string_for_parsing(time_str)
     
     if parsed_str:
@@ -50,6 +54,8 @@ def convert_utc_to_jst(utc_datetime_str):
     """
     UTC時刻文字列をJSTに変換し、'YYYY-MM-DD HH:MM:SS'形式で返す
     """
+    # 抽出された時刻文字列は、この関数に渡される前にパース可能な形式になっていることが期待されるが、
+    # 念のため clean_time_string_for_parsing を通す
     cleaned_time_str = clean_time_string_for_parsing(utc_datetime_str)
     
     if not cleaned_time_str:
@@ -70,55 +76,58 @@ def convert_utc_to_jst(utc_datetime_str):
 
 def extract_ip_audit_data_final(raw_text):
     """
-    OCRテキストからcreatedAtとloginIpのデータを抽出し、ペアにしてDataFrameを返す
+    OCRテキストから、UTC時刻とIPアドレスのペアを抽出し、DataFrameを返す
+    ロジック変更: 時刻とIPアドレスのペアを同時に検索する正規表現を使用
     """
-    ip_address_pattern = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
-    all_login_ip = ip_address_pattern.findall(raw_text)
-
-    createdAt_pattern = re.compile(r'"(created|cneated)At"\s*:\s*"([^"]+)"')
-    all_created_at = [match[1] for match in createdAt_pattern.findall(raw_text)]
     
-    st.info(f"抽出されたUTC時刻レコード数: **{len(all_created_at)}**")
-    st.info(f"抽出されたIPアドレスレコード数: **{len(all_login_ip)}**")
+    # 1. l/I -> 1 の置換（ll -> 11 への対応）をまず全体に行う
+    # テキスト全体をクリーンアップ
+    cleaned_text_for_search = raw_text.replace('l', '1').replace('I', '1')
+    
+    # 2. UTC時刻とIPアドレスのペアを同時に抽出する正規表現
+    # グループ1: UTC時刻 (YYYY-MM-DDTHH:MM:SS)
+    # グループ2: IPアドレス (d.d.d.d)
+    # OCR結果の特性上、時刻とIPアドレスの間に様々なノイズや改行があるため、re.DOTALL (.が改行も含む) を使用し、.*? (非貪欲マッチ) で結合する
+    combined_pattern = re.compile(
+        r'(\d{4}[-]\d{2}[-]\d{2}[T]\d{2}[:]\d{2}[:]\d{2})'  # 確実に時刻部分をキャプチャ (グループ1)
+        r'.*?'                                              # 時刻とIPの間の任意の文字（非貪欲マッチで次のIPへ）
+        r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'              # 確実にIPアドレス部分をキャプチャ (グループ2)
+        , re.DOTALL                                         # .が改行も含むようにする
+    )
+    
+    # テキスト全体からすべてのマッチング結果をリストで取得
+    # all_pairs は [(utc_time_str, ip_address_str), ...] のタプルのリストになる
+    all_pairs = combined_pattern.findall(cleaned_text_for_search)
+
+    st.info(f"抽出されたUTC時刻・IPアドレスのペアレコード数: **{len(all_pairs)}**")
 
     results = []
-    max_len = max(len(all_created_at), len(all_login_ip))
     
-    for i in range(max_len):
-        
-        if i < len(all_created_at):
-            utc_time_raw = all_created_at[i].strip()
-        else:
-            utc_time_raw = "**(時刻抽出失敗/レコードなし)**"
-
-        if i < len(all_login_ip):
-            ip_address = all_login_ip[i].strip()
-        else:
-            ip_address = "**(IP抽出失敗/レコードなし)**" 
+    for utc_time_raw, ip_address in all_pairs:
         
         results.append({
-            'UTC (元データ)': utc_time_raw,
+            'UTC (元データ)': utc_time_raw.strip(),
             'UTC (クリーン済)': clean_time_string_for_display(utc_time_raw),
             'JST (UTC + 9時間)': convert_utc_to_jst(utc_time_raw),
-            'IPアドレス (loginIp)': ip_address
+            'IPアドレス (loginIp)': ip_address.strip()
         })
 
     return pd.DataFrame(results)
 
 # --- 2. Streamlit UI定義 ---
 
-st.title("🫅 読取大臣（仮）")
+st.title("🫅 読取大臣（仮）V1.2.1")
 st.markdown("動作確認用のテスト版を作成しました。")
-st.markdown("createdAtのキー名誤認識（cneatedAt）にも対応しています。")
+st.markdown("OCRテキストの構造（時刻とIPが離れている）に対応するため、**時刻とIPアドレスのパターンを同時に検索し、それらをペアとして抽出する**ロジックに修正しました。")
+st.markdown("createdAtのキー名誤認識（cneatedAt）の直接的な検出は不要になりました。")
 st.markdown("IPアドレスの抽出は、3つの「.」で区切られた4つの数値の組み合わせを抽出します。IPv6には対応していません。")
 st.markdown("createdAtの文字やIPアドレスの数字がほかの文字に誤認識された場合は、その文字も反映できるようにしますので教えてください！")
 st.markdown("アップロードされたテキストファイルは、このアプリ内で処理・完結します。なので、情報漏えいの心配はありません。心配の方はGitHubからPythonコードを見て判断してください!")
-st.markdown("ダウンロードしたcsvファイルのJST列ですが、デフォルトの定義だと秒まで入っていないので、セルの書式設定から手動で「yyyy/mm/dd hh:mm:ss」などを定義してください。あとで直します。")
 st.markdown("---")
 st.markdown("### 読取革命のスキャンのコツとやり方")
 st.markdown("- エクセレントモードでスキャンする。")
 st.markdown("- 英語モードに設定する（どっちか忘れましたけど、アメリカかイギリスの国旗のマークだったと思います。)")
-st.markdown("- PDFのページ全体を四角で囲って抽出範囲の選択をする。（余計な上の部分や下のページ番号、PGP SIGNATUREなどの暗号部分は囲わないことをオススメします）")
+st.markdown("- PDFのページ全体を四角で囲って抽出範囲の選択をする。（ただし、余計な上の部分や下のページ番号、PGP SIGNATUREなどの暗号部分は選択しない。）")
 st.markdown("- 一太郎のアイコンからtxt形式で保存する。")
 st.markdown("- 保存したtxtファイルをこのアプリにアップロードする。")
 st.markdown("---")
@@ -158,6 +167,7 @@ if uploaded_file is not None:
             @st.cache_data
             def convert_df_to_csv(df):
                 # エンコーディングはCP932（Shift-JIS）を維持、番号列があるので index=False でOK
+                # Note: セーブ情報に基づき、数字にカンマは入れずシンプルなテキストとして記述されます。
                 return df.to_csv(index=False, encoding='cp932').encode('cp932')
             
             csv = convert_df_to_csv(df_result)
@@ -173,7 +183,3 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"ファイルの処理中に予期せぬエラーが発生しました: {e}")
-
-
-
-
