@@ -3,8 +3,49 @@ import re
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm  # フォント管理用
+import matplotlib.font_manager as fm
 import seaborn as sns
+import os
+import urllib.request  # フォントダウンロード用
+
+# ==========================================
+# 0. フォント設定部 (日本語対応の決定版)
+# ==========================================
+def configure_japanese_font():
+    """
+    日本語フォント(Noto Sans JP)を自動ダウンロードして設定する関数
+    Streamlit Cloudなど、日本語フォントがない環境での文字化けを防ぎます。
+    """
+    font_dir = "fonts"
+    font_file = os.path.join(font_dir, "NotoSansJP-Regular.ttf")
+    font_url = "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/NotoSansJP-Regular.ttf"
+
+    # フォントディレクトリがない場合は作成
+    if not os.path.exists(font_dir):
+        os.makedirs(font_dir)
+
+    # フォントファイルがない場合はダウンロード
+    if not os.path.exists(font_file):
+        try:
+            with st.spinner("日本語フォントをダウンロード中..."):
+                urllib.request.urlretrieve(font_url, font_file)
+        except Exception as e:
+            st.error(f"フォントのダウンロードに失敗しました: {e}")
+            return
+
+    # フォントをMatplotlibに登録
+    try:
+        fm.fontManager.addfont(font_file)
+        font_prop = fm.FontProperties(fname=font_file)
+        plt.rcParams['font.family'] = font_prop.get_name()
+    except Exception as e:
+        st.warning(f"フォントの設定に失敗しました: {e}")
+        # フォールバック
+        plt.rcParams['font.family'] = 'sans-serif'
+
+# アプリ起動時にフォント設定を実行
+configure_japanese_font()
+
 
 # ==========================================
 # 1. ロジック部 (元のコードの機能を完全移植)
@@ -254,25 +295,10 @@ def extract_ip_audit_data_final(raw_text, mode='X', time_key_option=None, ip_key
     return df
 
 # ==========================================
-# 2. UI部 (Tkinter -> Streamlit 変換)
+# 2. UI部
 # ==========================================
 
 st.set_page_config(page_title="読取大臣 Web版", layout="wide", page_icon="🕵️")
-
-# --- 日本語フォント設定（japanize_matplotlib非依存版） ---
-try:
-    # システム上のフォントを確認
-    fonts = [f.name for f in fm.fontManager.ttflist]
-    target_fonts = ['Noto Sans CJK JP', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', 'TakaoGothic', 'IPAGothic', 'IPAexGothic', 'VL Gothic']
-    
-    # 見つかった最初のフォントを使用
-    selected_font = next((f for f in target_fonts if f in fonts), "sans-serif")
-    
-    plt.rcParams['font.family'] = selected_font
-except Exception:
-    # フォールバック
-    plt.rcParams['font.family'] = 'sans-serif'
-# ----------------------------------------------------
 
 st.title("🕵️ 読取大臣 v1.4.3 (Streamlit版)")
 st.caption("AI Log Analysis System Engine - Desktop Logic Ported to Web")
