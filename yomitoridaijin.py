@@ -3,8 +3,8 @@ import re
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm  # フォント管理用
 import seaborn as sns
-import japanize_matplotlib  # 日本語フォント対応
 
 # ==========================================
 # 1. ロジック部 (元のコードの機能を完全移植)
@@ -227,7 +227,7 @@ def extract_key_based_data(cleaned_text, mode, time_key_regex, time_format_regex
                     'No.': len(results)+1,
                     'UTC (Before Clean)': current_time if current_time else "【時刻欠落】",
                     'UTC (Cleaned)': clean_time_string_for_display(current_time) if current_time else "【抽出失敗】",
-                    'JST (UTC + 9h)': convert_utc_to_jst(current_time) if current_time else "【抽出失敗】",
+                    'JST (UTC + 9h)': convert_utc_to_jst(current_time) if current_time else "【抽出失敗】", 
                     'loginIp': ip_val
                 })
                 current_time = None
@@ -259,7 +259,22 @@ def extract_ip_audit_data_final(raw_text, mode='X', time_key_option=None, ip_key
 
 st.set_page_config(page_title="読取大臣 Web版", layout="wide", page_icon="🕵️")
 
-st.title("🕵️ 読取大臣 v1.4.2 (Streamlit版)")
+# --- 日本語フォント設定（japanize_matplotlib非依存版） ---
+try:
+    # システム上のフォントを確認
+    fonts = [f.name for f in fm.fontManager.ttflist]
+    target_fonts = ['Noto Sans CJK JP', 'Hiragino Sans', 'Meiryo', 'Yu Gothic', 'TakaoGothic', 'IPAGothic', 'IPAexGothic', 'VL Gothic']
+    
+    # 見つかった最初のフォントを使用
+    selected_font = next((f for f in target_fonts if f in fonts), "sans-serif")
+    
+    plt.rcParams['font.family'] = selected_font
+except Exception:
+    # フォールバック
+    plt.rcParams['font.family'] = 'sans-serif'
+# ----------------------------------------------------
+
+st.title("🕵️ 読取大臣 v1.4.3 (Streamlit版)")
 st.caption("AI Log Analysis System Engine - Desktop Logic Ported to Web")
 
 # --- サイドバー (設定エリア) ---
