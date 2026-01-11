@@ -6,19 +6,20 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import seaborn as sns
 import os
-import urllib.request  # フォントダウンロード用
+import urllib.request
 
 # ==========================================
-# 0. フォント設定部 (日本語対応の決定版)
+# 0. フォント設定部 (404エラー修正版)
 # ==========================================
 def configure_japanese_font():
     """
-    日本語フォント(Noto Sans JP)を自動ダウンロードして設定する関数
-    Streamlit Cloudなど、日本語フォントがない環境での文字化けを防ぎます。
+    日本語フォント(IBM Plex Sans JP)を自動ダウンロードして設定する関数
+    Google FontsのURL変更に強い、静的ファイルへのリンクを使用しています。
     """
     font_dir = "fonts"
-    font_file = os.path.join(font_dir, "NotoSansJP-Regular.ttf")
-    font_url = "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/NotoSansJP-Regular.ttf"
+    font_file = os.path.join(font_dir, "IBMPlexSansJP-Regular.ttf")
+    # 確実に存在する静的フォントファイルのURL (IBM Plex Sans JP)
+    font_url = "https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexsansjp/IBMPlexSansJP-Regular.ttf"
 
     # フォントディレクトリがない場合は作成
     if not os.path.exists(font_dir):
@@ -27,7 +28,11 @@ def configure_japanese_font():
     # フォントファイルがない場合はダウンロード
     if not os.path.exists(font_file):
         try:
-            with st.spinner("日本語フォントをダウンロード中..."):
+            with st.spinner("日本語フォント(IBM Plex Sans JP)をダウンロード中..."):
+                # User-Agentを設定してダウンロード（403エラー防止）
+                opener = urllib.request.build_opener()
+                opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+                urllib.request.install_opener(opener)
                 urllib.request.urlretrieve(font_url, font_file)
         except Exception as e:
             st.error(f"フォントのダウンロードに失敗しました: {e}")
